@@ -1,0 +1,57 @@
+package dbmodel
+
+import (
+	"errors"
+	"github.com/astaxie/beego/orm"
+)
+
+type Project struct {
+	BaseModel
+	StrategyCount int `orm:"column(strategy_count)" db:"strategy_count" json:"strategy_count" form:"strategy_count"` // strategy count
+}
+
+func (Project) TableName() string {
+	return "project"
+}
+
+type ProjectRepository interface {
+	GetListByFilter(filters ...interface{}) []*Project
+}
+
+type projectRepositoryImpl struct {
+	o orm.Ormer
+}
+
+func NewProjectRepository(o orm.Ormer) ProjectRepository {
+	return &projectRepositoryImpl{o}
+}
+
+func (repo *projectRepositoryImpl) GetListByFilter(filters ...interface{}) []*Project {
+	list := make([]*Project, 0)
+	query := repo.o.QueryTable(new(Project).TableName())
+	if len(filters) > 0 {
+		l := len(filters)
+		for k := 0; k < l; k += 2 {
+			query = query.Filter(filters[k].(string), filters[k+1])
+		}
+	}
+	// order by time
+	query.OrderBy("-created_at").All(&list)
+	return list
+}
+
+func GetProjectList() []*Project {
+	filter := make([]interface{}, 0)
+	// strategy_count != 0
+	filter = append(filter, "strategy_count__gt", 0)
+	return NewProjectRepository(orm.NewOrm()).GetListByFilter(filter)
+}
+
+func GetProjectById(id string) (*Project, error) {
+	list := NewProjectRepository(orm.NewOrm()).GetListByFilter("project_id", id)
+	if len(list) == 0 {
+		return nil, errors.New("project not found")
+	}
+
+	return list[0], nil
+}

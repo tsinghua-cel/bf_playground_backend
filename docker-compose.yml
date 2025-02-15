@@ -1,0 +1,14 @@
+services:
+  bfbackend:
+    image: bfbackend:latest
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "2"
+    entrypoint: bfbackend --config /root/config.yml
+    ports:
+      - "8088:8088"
+    volumes:
+      - ./config.yml:/root/config.yml
