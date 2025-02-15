@@ -11,13 +11,26 @@ import (
 	"strconv"
 )
 
+const (
+	maxPageSize = 30
+	maxTotal    = 1000
+)
+
 type apiHandler struct {
 	conf *config.Config
 }
 
 func (api apiHandler) GetProjectList(c *gin.Context) {
-	// no param.
-	pList := dbmodel.GetProjectList()
+	// 获取分页参数
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "10"))
+
+	if pageSize > maxPageSize {
+		pageSize = maxPageSize
+	}
+
+	offset := (page - 1) * pageSize
+	total, pList := dbmodel.GetProjectListWithPagination(offset, pageSize)
 	res := make([]apimodels.HomeProject, 0)
 	for _, p := range pList {
 		maxSlot := dbmodel.GetStrategyCount(p.ProjectId)
@@ -29,17 +42,35 @@ func (api apiHandler) GetProjectList(c *gin.Context) {
 			EndTime:       p.UpdatedAt.Unix(),
 		})
 	}
+
 	m := make(map[string]interface{})
 	m["data"] = res
+	m["total"] = total
 	m["code"] = http.StatusOK
 	m["message"] = "success"
 	api.response(c, http.StatusOK, m)
 }
 
 func (api apiHandler) GetTopStrategies(c *gin.Context) {
-	// no param.
+	// Get pagination parameters
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "10"))
+
+	// Calculate offset
+	offset := (page - 1) * pageSize
+
+	// check offset is bigger than maxTotal
+	if offset > maxTotal {
+		offset = maxTotal - pageSize
+	}
+
+	// Get strategies with pagination
+	total, list := dbmodel.GetStrategyListByGreatLostRatio(offset, pageSize)
 	res := make([]apimodels.HomeStrategy, 0)
-	list := dbmodel.GetStrategyListByGreatLostRatio(30)
+	if total > maxTotal {
+		total = maxTotal
+	}
+
 	for _, s := range list {
 		rate1 := strconv.FormatFloat(s.HonestLoseRateAvg*100, 'f', 4, 64)
 		rate2 := strconv.FormatFloat(s.AttackerLoseRateAvg*100, 'f', 4, 64)
@@ -54,8 +85,10 @@ func (api apiHandler) GetTopStrategies(c *gin.Context) {
 			StrategyContent:      s.Content,
 		})
 	}
+
 	m := make(map[string]interface{})
 	m["data"] = res
+	m["total"] = total
 	m["code"] = http.StatusOK
 	m["message"] = "success"
 	api.response(c, http.StatusOK, m)
@@ -71,7 +104,7 @@ func (api apiHandler) GetProjectDetail(c *gin.Context) {
 	}
 
 	maxSlot := dbmodel.GetMaxSlotNumber(p.ProjectId)
-	limit := 20
+	limit := 10
 
 	t1 := make([]apimodels.StrategyWithReorgCount, 0)
 	{

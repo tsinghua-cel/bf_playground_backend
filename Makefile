@@ -12,6 +12,10 @@ all: bfbackend
 run:
 	@docker compose up -d
 
+down:
+	@docker compose down
+
+
 bfbackend:
 	go build -o=${GOBIN}/$@ -gcflags "all=-N -l" .
 	@echo "Done building."

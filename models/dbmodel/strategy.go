@@ -111,18 +111,20 @@ func GetStrategyListByHonestLoseRateAvg(project string, limit int) []*Strategy {
 	return NewStrategyRepository(orm.NewOrm(), project).GetSortedList(limit, "-honest_lose_rate_avg")
 }
 
-func GetStrategyListByGreatLostRatio(limit int) []*Strategy {
+func GetStrategyListByGreatLostRatio(offset int, limit int) (int64, []*Strategy) {
 	// get strategy list by great honest lose rate avg desc.
 	// get strategy list order by honest_lost_rate_avg/attacker_lost_rate_avg
 	norm := orm.NewOrm()
 	list := make([]*Strategy, 0)
-	sql := fmt.Sprintf("SELECT * FROM t_strategy WHERE attacker_lose_rate_avg != 0 ORDER BY (honest_lose_rate_avg / attacker_lose_rate_avg) DESC limit %d", limit)
+	count := GetStrategyCount("")
+
+	sql := fmt.Sprintf("SELECT * FROM t_strategy WHERE attacker_lose_rate_avg != 0 ORDER BY (honest_lose_rate_avg / attacker_lose_rate_avg) DESC, created_at DESC limit %d offset %d", limit, offset)
 	_, err := norm.Raw(sql).QueryRows(&list)
 	if err != nil {
 		log.WithError(err).Error("failed to get strategy list")
-		return nil
+		return count, nil
 	}
-	return list
+	return count, list
 }
 
 func GetStrategyListByGreatLostRatioInProject(project string, limit int) []*Strategy {
