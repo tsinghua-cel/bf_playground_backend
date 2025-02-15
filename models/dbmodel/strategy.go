@@ -26,7 +26,7 @@ func (Strategy) TableName() string {
 type StrategyRepository interface {
 	GetByUUID(uuid string) *Strategy
 	GetListByFilter(filters ...interface{}) []*Strategy
-	GetSortedList(limit int, order string) []*Strategy
+	GetSortedList(offset int, limit int, order string) []*Strategy
 	GetCount() int64
 }
 
@@ -42,7 +42,8 @@ func NewStrategyRepository(o orm.Ormer, project string) StrategyRepository {
 func (repo *strategyRepositoryImpl) HasByUUID(uuid string) bool {
 	filters := make([]interface{}, 0)
 	filters = append(filters, "uuid", uuid)
-	return len(repo.GetListByFilter(filters...)) > 0
+	list := repo.GetListByFilter(filters...)
+	return len(list) > 0
 }
 
 func (repo *strategyRepositoryImpl) GetByUUID(uuid string) *Strategy {
@@ -67,11 +68,11 @@ func (repo *strategyRepositoryImpl) GetCount() int64 {
 	return count
 }
 
-func (repo *strategyRepositoryImpl) GetSortedList(limit int, order string) []*Strategy {
+func (repo *strategyRepositoryImpl) GetSortedList(offset int, limit int, order string) []*Strategy {
 	list := make([]*Strategy, 0)
 	query := repo.o.QueryTable(new(Strategy).TableName())
 	query = ProjectFilter(query, repo.project)
-	_, err := query.OrderBy(order).Limit(limit).All(&list)
+	_, err := query.OrderBy(order).Limit(limit, offset).All(&list)
 	if err != nil {
 		log.WithError(err).Error("failed to get strategy list")
 		return nil
@@ -101,14 +102,14 @@ func GetStrategyCount(project string) int64 {
 	return NewStrategyRepository(orm.NewOrm(), project).GetCount()
 }
 
-func GetStrategyListByReorgCount(project string, limit int) []*Strategy {
+func GetStrategyListByReorgCount(project string, offset int, limit int) []*Strategy {
 	// get strategy list by reorg count desc.
-	return NewStrategyRepository(orm.NewOrm(), project).GetSortedList(limit, "-reorg_count")
+	return NewStrategyRepository(orm.NewOrm(), project).GetSortedList(offset, limit, "-reorg_count")
 }
 
-func GetStrategyListByHonestLoseRateAvg(project string, limit int) []*Strategy {
+func GetStrategyListByHonestLoseRateAvg(project string, offset int, limit int) []*Strategy {
 	// get strategy list by honest lose rate avg desc.
-	return NewStrategyRepository(orm.NewOrm(), project).GetSortedList(limit, "-honest_lose_rate_avg")
+	return NewStrategyRepository(orm.NewOrm(), project).GetSortedList(offset, limit, "-honest_lose_rate_avg")
 }
 
 func GetStrategyListByGreatLostRatio(offset int, limit int) (int64, []*Strategy) {
@@ -127,12 +128,12 @@ func GetStrategyListByGreatLostRatio(offset int, limit int) (int64, []*Strategy)
 	return count, list
 }
 
-func GetStrategyListByGreatLostRatioInProject(project string, limit int) []*Strategy {
+func GetStrategyListByGreatLostRatioInProject(project string, offset int, limit int) []*Strategy {
 	// get strategy list by great honest lose rate avg desc.
 	// get strategy list order by honest_lost_rate_avg/attacker_lost_rate_avg
 	norm := orm.NewOrm()
 	list := make([]*Strategy, 0)
-	sql := fmt.Sprintf("SELECT * FROM t_strategy WHERE attacker_lose_rate_avg != 0 and %s ORDER BY (honest_lose_rate_avg / attacker_lose_rate_avg) DESC limit %d", ProjectFilterString(project), limit)
+	sql := fmt.Sprintf("SELECT * FROM t_strategy WHERE attacker_lose_rate_avg != 0 and %s ORDER BY (honest_lose_rate_avg / attacker_lose_rate_avg) DESC , created_at DESC limit %d offset %d", ProjectFilterString(project), limit, offset)
 	_, err := norm.Raw(sql).QueryRows(&list)
 	if err != nil {
 		log.WithError(err).Error("failed to get strategy list")
@@ -143,7 +144,7 @@ func GetStrategyListByGreatLostRatioInProject(project string, limit int) []*Stra
 
 func GetStrategyListCSV(project string) ([]byte, error) {
 	repo := NewStrategyRepository(orm.NewOrm(), project)
-	list := repo.GetSortedList(0, "-created_at")
+	list := repo.GetSortedList(0, 0, "-created_at")
 	if len(list) == 0 {
 		return nil, nil
 	}

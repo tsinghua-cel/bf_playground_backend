@@ -28,8 +28,11 @@ func (api apiHandler) GetProjectList(c *gin.Context) {
 	if pageSize > maxPageSize {
 		pageSize = maxPageSize
 	}
-
 	offset := (page - 1) * pageSize
+	if offset > maxTotal {
+		offset = maxTotal - pageSize
+	}
+
 	total, pList := dbmodel.GetProjectListWithPagination(offset, pageSize)
 	res := make([]apimodels.HomeProject, 0)
 	for _, p := range pList {
@@ -55,11 +58,10 @@ func (api apiHandler) GetTopStrategies(c *gin.Context) {
 	// Get pagination parameters
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "10"))
-
-	// Calculate offset
+	if pageSize > maxPageSize {
+		pageSize = maxPageSize
+	}
 	offset := (page - 1) * pageSize
-
-	// check offset is bigger than maxTotal
 	if offset > maxTotal {
 		offset = maxTotal - pageSize
 	}
@@ -97,6 +99,10 @@ func (api apiHandler) GetTopStrategies(c *gin.Context) {
 func (api apiHandler) GetProjectDetail(c *gin.Context) {
 	// get project id from url.
 	project := c.Param("id")
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "5"))
+	if pageSize > maxPageSize {
+		pageSize = maxPageSize
+	}
 	p, _ := dbmodel.GetProjectById(project)
 	if p == nil {
 		api.errResponse(c, fmt.Errorf("project not found"))
@@ -104,11 +110,10 @@ func (api apiHandler) GetProjectDetail(c *gin.Context) {
 	}
 
 	maxSlot := dbmodel.GetMaxSlotNumber(p.ProjectId)
-	limit := 10
 
 	t1 := make([]apimodels.StrategyWithReorgCount, 0)
 	{
-		list := dbmodel.GetStrategyListByReorgCount(p.ProjectId, limit)
+		list := dbmodel.GetStrategyListByReorgCount(p.ProjectId, 0, pageSize)
 		for _, s := range list {
 			t1 = append(t1, apimodels.StrategyWithReorgCount{
 				StrategyId:      s.UUID,
@@ -120,7 +125,7 @@ func (api apiHandler) GetProjectDetail(c *gin.Context) {
 
 	t2 := make([]apimodels.StrategyWithHonestLose, 0)
 	{
-		list := dbmodel.GetStrategyListByHonestLoseRateAvg(p.ProjectId, limit)
+		list := dbmodel.GetStrategyListByHonestLoseRateAvg(p.ProjectId, 0, pageSize)
 		for _, s := range list {
 			rate := strconv.FormatFloat(s.HonestLoseRateAvg*100, 'f', 4, 64)
 			t2 = append(t2, apimodels.StrategyWithHonestLose{
@@ -132,7 +137,7 @@ func (api apiHandler) GetProjectDetail(c *gin.Context) {
 	}
 	t3 := make([]apimodels.StrategyWithGreatHonestLose, 0)
 	{
-		list := dbmodel.GetStrategyListByGreatLostRatioInProject(p.ProjectId, limit)
+		list := dbmodel.GetStrategyListByGreatLostRatioInProject(p.ProjectId, 0, pageSize)
 		for _, s := range list {
 			rate1 := strconv.FormatFloat(s.HonestLoseRateAvg*100, 'f', 4, 64)
 			rate2 := strconv.FormatFloat(s.AttackerLoseRateAvg*100, 'f', 4, 64)
@@ -209,6 +214,127 @@ func (api apiHandler) DownloadProject(c *gin.Context) {
 	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%s.csv", project))
 	c.Header("Content-Type", "text/csv")
 	c.File(tmpFile.Name())
+}
+
+func (api apiHandler) GetStrategyListByHonestLose(c *gin.Context) {
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "10"))
+	if pageSize > maxPageSize {
+		pageSize = maxPageSize
+	}
+	offset := (page - 1) * pageSize
+	if offset > maxTotal {
+		offset = maxTotal - pageSize
+	}
+
+	// get project id from url.
+	project := c.Param("id")
+	p, _ := dbmodel.GetProjectById(project)
+	if p == nil {
+		api.errResponse(c, fmt.Errorf("project not found"))
+		return
+	}
+
+	count := dbmodel.GetStrategyCount(p.ProjectId)
+	list := dbmodel.GetStrategyListByHonestLoseRateAvg(p.ProjectId, offset, pageSize)
+	res := make([]apimodels.StrategyWithHonestLose, 0)
+	for _, s := range list {
+		rate := strconv.FormatFloat(s.HonestLoseRateAvg*100, 'f', 4, 64)
+		res = append(res, apimodels.StrategyWithHonestLose{
+			StrategyId:        s.UUID,
+			HonestLoseRateAvg: fmt.Sprintf("%s%%", rate),
+			StrategyContent:   s.Content,
+		})
+	}
+
+	m := make(map[string]interface{})
+	m["data"] = res
+	m["total"] = count
+	m["code"] = http.StatusOK
+	m["message"] = "success"
+	api.response(c, http.StatusOK, m)
+}
+
+func (api apiHandler) GetStrategyListByRatio(c *gin.Context) {
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "10"))
+	if pageSize > maxPageSize {
+		pageSize = maxPageSize
+	}
+	offset := (page - 1) * pageSize
+	if offset > maxTotal {
+		offset = maxTotal - pageSize
+	}
+
+	// get project id from url.
+	project := c.Param("id")
+	p, _ := dbmodel.GetProjectById(project)
+	if p == nil {
+		api.errResponse(c, fmt.Errorf("project not found"))
+		return
+	}
+
+	count := dbmodel.GetStrategyCount(p.ProjectId)
+	list := dbmodel.GetStrategyListByGreatLostRatioInProject(p.ProjectId, offset, pageSize)
+	res := make([]apimodels.StrategyWithGreatHonestLose, 0)
+	for _, s := range list {
+		rate1 := strconv.FormatFloat(s.HonestLoseRateAvg*100, 'f', 4, 64)
+		rate2 := strconv.FormatFloat(s.AttackerLoseRateAvg*100, 'f', 4, 64)
+		ratio := s.HonestLoseRateAvg / s.AttackerLoseRateAvg
+		rate_ratio := strconv.FormatFloat(ratio*100, 'f', 4, 64)
+		res = append(res, apimodels.StrategyWithGreatHonestLose{
+			StrategyId:           s.UUID,
+			HonestLoseRateAvg:    fmt.Sprintf("%s%%", rate1),
+			MaliciousLoseRateAvg: fmt.Sprintf("%s%%", rate2),
+			Ratio:                fmt.Sprintf("%s%%", rate_ratio),
+			StrategyContent:      s.Content,
+		})
+	}
+
+	m := make(map[string]interface{})
+	m["data"] = res
+	m["total"] = count
+	m["code"] = http.StatusOK
+	m["message"] = "success"
+	api.response(c, http.StatusOK, m)
+}
+
+func (api apiHandler) GetStrategyListByReorg(c *gin.Context) {
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "10"))
+	if pageSize > maxPageSize {
+		pageSize = maxPageSize
+	}
+	offset := (page - 1) * pageSize
+	if offset > maxTotal {
+		offset = maxTotal - pageSize
+	}
+
+	// get project id from url.
+	project := c.Param("id")
+	p, _ := dbmodel.GetProjectById(project)
+	if p == nil {
+		api.errResponse(c, fmt.Errorf("project not found"))
+		return
+	}
+
+	count := dbmodel.GetStrategyCount(p.ProjectId)
+	list := dbmodel.GetStrategyListByReorgCount(p.ProjectId, offset, pageSize)
+	res := make([]apimodels.StrategyWithReorgCount, 0)
+	for _, s := range list {
+		res = append(res, apimodels.StrategyWithReorgCount{
+			StrategyId:      s.UUID,
+			ReorgCount:      strconv.FormatInt(int64(s.ReorgCount), 10),
+			StrategyContent: s.Content,
+		})
+	}
+
+	m := make(map[string]interface{})
+	m["data"] = res
+	m["total"] = count
+	m["code"] = http.StatusOK
+	m["message"] = "success"
+	api.response(c, http.StatusOK, m)
 }
 
 func (api apiHandler) response(c *gin.Context, code int, data interface{}) {

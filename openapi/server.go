@@ -31,6 +31,10 @@ func (s *OpenAPI) startHttp(address string) error {
 		v1.GET("/project-list", handler.GetProjectList)
 		v1.GET("/top-strategies", handler.GetTopStrategies)
 
+		v1.GET("/reorg-strategy-list/:id", handler.GetStrategyListByReorg)
+		v1.GET("/honest-lose-strategy-list/:id", handler.GetStrategyListByHonestLose)
+		v1.GET("/lose-ratio-strategy-list/:id", handler.GetStrategyListByRatio)
+
 		// project page
 		v1.GET("/project/:id", handler.GetProjectDetail)
 		// download strategy
