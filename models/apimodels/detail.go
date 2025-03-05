@@ -8,6 +8,7 @@ type ProjectDetail struct {
 }
 
 type ProjectStat struct {
+	Category      string `json:"category"`
 	ProjectId     string `json:"project_id"`
 	TotalSlot     int64  `json:"total_slot"`
 	TotalStrategy int64  `json:"total_strategy"`
@@ -16,6 +17,7 @@ type ProjectStat struct {
 }
 
 type StrategyWithReorgCount struct {
+	Category        string `json:"category"`
 	ReorgCount      string `json:"reorg_count"`
 	StrategyId      string `json:"strategy_id"`
 	StrategyContent string `json:"strategy_content"`
@@ -23,6 +25,7 @@ type StrategyWithReorgCount struct {
 
 // That HonestLoseRateAvg > 0
 type StrategyWithHonestLose struct {
+	Category          string `json:"category"`
 	HonestLoseRateAvg string `json:"honest_lose_rate_avg"`
 	StrategyId        string `json:"strategy_id"`
 	StrategyContent   string `json:"strategy_content"`
@@ -30,6 +33,7 @@ type StrategyWithHonestLose struct {
 
 // That HonestLoseAvg > MaliciousLoseAvg
 type StrategyWithGreatHonestLose struct {
+	Category             string `json:"category"`
 	HonestLoseRateAvg    string `json:"honest_lose"`
 	MaliciousLoseRateAvg string `json:"malicious_lose"`
 	Ratio                string `json:"ratio"`

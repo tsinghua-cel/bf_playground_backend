@@ -13,6 +13,7 @@ type Strategy struct {
 	MinEpoch             int64   `orm:"column(min_epoch)" db:"min_epoch" json:"min_epoch" form:"min_epoch"`
 	MaxEpoch             int64   `orm:"column(max_epoch)" db:"max_epoch" json:"max_epoch" form:"max_epoch"`
 	IsEnd                bool    `orm:"column(is_end)" db:"is_end" json:"is_end" form:"is_end"`
+	Category             string  `orm:"column(category);size(100)" db:"category" json:"category" form:"category"`
 	ReorgCount           int     `orm:"column(reorg_count)" db:"reorg_count" json:"reorg_count" form:"reorg_count"`
 	ImpactValidatorCount int     `orm:"column(impact_validator_count)" db:"impact_validator_count" json:"impact_validator_count" form:"impact_validator_count"`
 	HonestLoseRateAvg    float64 `orm:"column(honest_lose_rate_avg)" db:"honest_lose_rate_avg" json:"honest_lose_rate_avg" form:"honest_lose_rate_avg"`
@@ -148,10 +149,13 @@ func GetStrategyListCSV(project string) ([]byte, error) {
 	if len(list) == 0 {
 		return nil, nil
 	}
-	csv := "uuid,content,min_epoch,max_epoch,is_end,reorg_count,impact_validator_count,honest_lose_rate_avg,attacker_lose_rate_avg\n"
+	csv := "uuid,category,content,min_epoch,max_epoch,is_end,reorg_count,impact_validator_count,honest_lose_rate_avg,attacker_lose_rate_avg\n"
 	for _, s := range list {
+		if s.Category == "" {
+			s.Category = "unknown"
+		}
 		csv += fmt.Sprintf("%s,%s,%d,%d,%t,%d,%d,%f,%f\n",
-			s.UUID, s.Content, s.MinEpoch, s.MaxEpoch, s.IsEnd, s.ReorgCount, s.ImpactValidatorCount, s.HonestLoseRateAvg, s.AttackerLoseRateAvg)
+			s.UUID, s.Category, s.Content, s.MinEpoch, s.MaxEpoch, s.IsEnd, s.ReorgCount, s.ImpactValidatorCount, s.HonestLoseRateAvg, s.AttackerLoseRateAvg)
 	}
 	return []byte(csv), nil
 }

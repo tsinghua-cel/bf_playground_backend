@@ -6,6 +6,7 @@ type HomeProject struct {
 	TotalStrategy int64  `json:"total_strategy"`
 	StartTime     int64  `json:"start_time"`
 	EndTime       int64  `json:"end_time"`
+	Category      string `json:"category"`
 }
 
 type HomeStrategy HomeStrategyWithGreatHonestLose
@@ -33,4 +34,5 @@ type HomeStrategyWithGreatHonestLose struct {
 	Ratio                string `json:"ratio"`
 	StrategyId           string `json:"strategy_id"`
 	StrategyContent      string `json:"strategy_content"`
+	Category             string `json:"category"`
 }

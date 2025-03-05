@@ -43,6 +43,7 @@ func (api apiHandler) GetProjectList(c *gin.Context) {
 			TotalStrategy: int64(p.StrategyCount),
 			StartTime:     p.CreatedAt.Unix(),
 			EndTime:       p.UpdatedAt.Unix(),
+			Category:      p.StrategyCategory,
 		})
 	}
 
@@ -85,6 +86,7 @@ func (api apiHandler) GetTopStrategies(c *gin.Context) {
 			MaliciousLoseRateAvg: fmt.Sprintf("%s%%", rate2),
 			Ratio:                fmt.Sprintf("%s%%", rate_ratio),
 			StrategyContent:      s.Content,
+			Category:             s.Category,
 		})
 	}
 
@@ -116,6 +118,7 @@ func (api apiHandler) GetProjectDetail(c *gin.Context) {
 		list := dbmodel.GetStrategyListByReorgCount(p.ProjectId, 0, pageSize)
 		for _, s := range list {
 			t1 = append(t1, apimodels.StrategyWithReorgCount{
+				Category:        s.Category,
 				StrategyId:      s.UUID,
 				ReorgCount:      strconv.FormatInt(int64(s.ReorgCount), 10),
 				StrategyContent: s.Content,
@@ -129,6 +132,7 @@ func (api apiHandler) GetProjectDetail(c *gin.Context) {
 		for _, s := range list {
 			rate := strconv.FormatFloat(s.HonestLoseRateAvg*100, 'f', 4, 64)
 			t2 = append(t2, apimodels.StrategyWithHonestLose{
+				Category:          s.Category,
 				StrategyId:        s.UUID,
 				HonestLoseRateAvg: fmt.Sprintf("%s%%", rate),
 				StrategyContent:   s.Content,
@@ -144,6 +148,7 @@ func (api apiHandler) GetProjectDetail(c *gin.Context) {
 			ratio := s.HonestLoseRateAvg / s.AttackerLoseRateAvg
 			rate_ratio := strconv.FormatFloat(ratio*100, 'f', 4, 64)
 			t3 = append(t3, apimodels.StrategyWithGreatHonestLose{
+				Category:             s.Category,
 				StrategyId:           s.UUID,
 				HonestLoseRateAvg:    fmt.Sprintf("%s%%", rate1),
 				MaliciousLoseRateAvg: fmt.Sprintf("%s%%", rate2),
@@ -155,6 +160,7 @@ func (api apiHandler) GetProjectDetail(c *gin.Context) {
 
 	detail := apimodels.ProjectDetail{
 		Stat: apimodels.ProjectStat{
+			Category:      p.StrategyCategory,
 			ProjectId:     p.ProjectId,
 			TotalSlot:     int64(maxSlot),
 			TotalStrategy: int64(p.StrategyCount),
@@ -241,6 +247,7 @@ func (api apiHandler) GetStrategyListByHonestLose(c *gin.Context) {
 	for _, s := range list {
 		rate := strconv.FormatFloat(s.HonestLoseRateAvg*100, 'f', 4, 64)
 		res = append(res, apimodels.StrategyWithHonestLose{
+			Category:          s.Category,
 			StrategyId:        s.UUID,
 			HonestLoseRateAvg: fmt.Sprintf("%s%%", rate),
 			StrategyContent:   s.Content,
@@ -283,6 +290,7 @@ func (api apiHandler) GetStrategyListByRatio(c *gin.Context) {
 		ratio := s.HonestLoseRateAvg / s.AttackerLoseRateAvg
 		rate_ratio := strconv.FormatFloat(ratio*100, 'f', 4, 64)
 		res = append(res, apimodels.StrategyWithGreatHonestLose{
+			Category:             s.Category,
 			StrategyId:           s.UUID,
 			HonestLoseRateAvg:    fmt.Sprintf("%s%%", rate1),
 			MaliciousLoseRateAvg: fmt.Sprintf("%s%%", rate2),
@@ -323,6 +331,7 @@ func (api apiHandler) GetStrategyListByReorg(c *gin.Context) {
 	res := make([]apimodels.StrategyWithReorgCount, 0)
 	for _, s := range list {
 		res = append(res, apimodels.StrategyWithReorgCount{
+			Category:        s.Category,
 			StrategyId:      s.UUID,
 			ReorgCount:      strconv.FormatInt(int64(s.ReorgCount), 10),
 			StrategyContent: s.Content,
