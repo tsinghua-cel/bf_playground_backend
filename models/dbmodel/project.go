@@ -9,6 +9,7 @@ type Project struct {
 	BaseModel
 	StrategyCategory string `orm:"column(strategy_category)" db:"strategy_category" json:"strategy_category" form:"strategy_category"` // strategy category
 	StrategyCount    int    `orm:"column(strategy_count)" db:"strategy_count" json:"strategy_count" form:"strategy_count"`             // strategy count
+	LatestSlot       int64  `orm:"column(latest_slot)" db:"latest_slot" json:"latest_slot" form:"latest_slot"`                         // latest slot
 }
 
 func (Project) TableName() string {

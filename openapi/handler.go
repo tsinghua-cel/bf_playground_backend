@@ -36,7 +36,10 @@ func (api apiHandler) GetProjectList(c *gin.Context) {
 	total, pList := dbmodel.GetProjectListWithPagination(offset, pageSize)
 	res := make([]apimodels.HomeProject, 0)
 	for _, p := range pList {
-		maxSlot := dbmodel.GetMaxSlotNumber(p.ProjectId)
+		maxSlot := p.LatestSlot
+		if maxSlot == 0 {
+			maxSlot = dbmodel.GetMaxSlotNumber(p.ProjectId)
+		}
 		res = append(res, apimodels.HomeProject{
 			ProjectId:     p.ProjectId,
 			TotalSlot:     int64(maxSlot),
@@ -110,8 +113,10 @@ func (api apiHandler) GetProjectDetail(c *gin.Context) {
 		api.errResponse(c, fmt.Errorf("project not found"))
 		return
 	}
-
-	maxSlot := dbmodel.GetMaxSlotNumber(p.ProjectId)
+	maxSlot := p.LatestSlot
+	if maxSlot == 0 {
+		maxSlot = dbmodel.GetMaxSlotNumber(p.ProjectId)
+	}
 
 	t1 := make([]apimodels.StrategyWithReorgCount, 0)
 	{
