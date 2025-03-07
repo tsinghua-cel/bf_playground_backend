@@ -36,7 +36,7 @@ func (api apiHandler) GetProjectList(c *gin.Context) {
 	total, pList := dbmodel.GetProjectListWithPagination(offset, pageSize)
 	res := make([]apimodels.HomeProject, 0)
 	for _, p := range pList {
-		maxSlot := dbmodel.GetStrategyCount(p.ProjectId)
+		maxSlot := dbmodel.GetMaxSlotNumber(p.ProjectId)
 		res = append(res, apimodels.HomeProject{
 			ProjectId:     p.ProjectId,
 			TotalSlot:     int64(maxSlot),
