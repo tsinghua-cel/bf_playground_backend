@@ -77,6 +77,6 @@ func GetProjectById(id string) (*Project, error) {
 func GetProjectListWithPagination(offset, limit int) (int64, []*Project) {
 	filter := make([]interface{}, 0)
 	// strategy_count != 0
-	filter = append(filter, "strategy_count__gt", 0)
+	//filter = append(filter, "strategy_count__gt", 0)
 	return NewProjectRepository(orm.NewOrm()).GetListByFilterWithPagination(offset, limit, filter...)
 }

@@ -37,9 +37,6 @@ func (api apiHandler) GetProjectList(c *gin.Context) {
 	res := make([]apimodels.HomeProject, 0)
 	for _, p := range pList {
 		maxSlot := p.LatestSlot
-		if maxSlot == 0 {
-			maxSlot = dbmodel.GetMaxSlotNumber(p.ProjectId)
-		}
 		res = append(res, apimodels.HomeProject{
 			ProjectId:     p.ProjectId,
 			TotalSlot:     int64(maxSlot),
